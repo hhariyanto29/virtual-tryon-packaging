@@ -30,7 +30,8 @@ export class PaperBagGeometry extends BaseGeometry {
     this.group.clear()
     this.faces.clear()
 
-    // Create main bag body (wider, thinner box)
+    // Create main bag body - WIDER and THINNER as requested
+    // Updated dimensions: width=2.5, height=3.5, depth=1.2
     const bagGeometry = new THREE.BoxGeometry(
       config.width,
       config.height,

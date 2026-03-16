@@ -113,13 +113,15 @@ export class PouchGeometry extends BaseGeometry {
   private createPouchCurve(config: PouchGeometryConfig): THREE.CatmullRomCurve3 {
     const points: THREE.Vector3[] = []
     
-    // Create a gentle curve for standing pouch
-    const curveHeight = config.curveHeight || config.height * 0.1
+    // Create a gentle curve for standing pouch with slight bulge in the middle
+    const curveHeight = config.curveHeight || config.height * 0.15
     
     points.push(new THREE.Vector3(0, -config.height / 2, 0)) // Bottom
-    points.push(new THREE.Vector3(0, -config.height / 4, curveHeight * 0.3)) // Lower curve
-    points.push(new THREE.Vector3(0, 0, curveHeight)) // Middle (most curved)
-    points.push(new THREE.Vector3(0, config.height / 4, curveHeight * 0.3)) // Upper curve
+    points.push(new THREE.Vector3(0, -config.height / 3, curveHeight * 0.2)) // Lower curve
+    points.push(new THREE.Vector3(0, -config.height / 6, curveHeight * 0.4)) // Lower middle
+    points.push(new THREE.Vector3(0, 0, curveHeight)) // Middle (most curved - bulge)
+    points.push(new THREE.Vector3(0, config.height / 6, curveHeight * 0.6)) // Upper middle
+    points.push(new THREE.Vector3(0, config.height / 3, curveHeight * 0.3)) // Upper curve
     points.push(new THREE.Vector3(0, config.height / 2, 0)) // Top
     
     return new THREE.CatmullRomCurve3(points)

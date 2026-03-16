@@ -1,6 +1,6 @@
 // Type definitions for packaging templates
 
-export type PackagingCategory = 'box' | 'bottle' | 'pouch' | 'tube' | 'bag'
+export type PackagingCategory = 'box' | 'bottle' | 'pouch' | 'tube' | 'bag' | 'cup' | 'container' | 'bowl' | 'takeaway' | 'perfume'
 
 export interface GeometryConfig {
   type: PackagingCategory

@@ -1,16 +1,18 @@
 <template>
   <div class="template-gallery">
     <div class="gallery-header">
-      <h3>Packaging Templates</h3>
+      <h3 class="gallery-title">Template Packaging</h3>
+      <p class="gallery-subtitle">Pilih template untuk memulai desain kemasan Anda</p>
+      
       <div class="category-tabs">
         <button
-          v-for="category in categories"
-          :key="category"
+          v-for="category in categoryFilters"
+          :key="category.id"
           class="category-tab"
-          :class="{ active: selectedCategory === category }"
-          @click="selectCategory(category)"
+          :class="{ active: selectedCategory === category.id }"
+          @click="selectCategory(category.id)"
         >
-          {{ categoryLabels[category] }}
+          {{ category.name }}
         </button>
       </div>
     </div>
@@ -24,25 +26,39 @@
         @click="selectTemplate(template)"
       >
         <div class="template-thumbnail">
-          <div class="thumbnail-placeholder">
-            <span class="template-icon">{{ getCategoryIcon(template.category) }}</span>
+          <div class="thumbnail-placeholder" :style="getThumbnailStyle(template)">
+            <span class="template-name">{{ getTemplateInitials(template.name) }}</span>
+          </div>
+          <div class="category-badge" :class="template.category">
+            {{ getCategoryLabel(template.category) }}
           </div>
           <div v-if="activeTemplateId === template.id" class="active-indicator">
             <div class="active-dot"></div>
           </div>
         </div>
-        <div class="template-info">
-          <h4>{{ template.name }}</h4>
-          <p class="template-category">{{ categoryLabels[template.category] }}</p>
-          <p v-if="template.description" class="template-description">
-            {{ template.description }}
+        
+        <div class="template-content">
+          <h4 class="template-title">{{ template.name }}</h4>
+          <p class="template-description" :title="template.description">
+            {{ truncateDescription(template.description || '') }}
           </p>
+          
+          <div class="template-tags">
+            <span
+              v-for="tag in (template.tags || [])"
+              :key="tag"
+              class="tag"
+            >
+              {{ tag }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
     <div v-if="filteredTemplates.length === 0" class="empty-state">
-      <p>No templates found for this category.</p>
+      <div class="empty-icon">📦</div>
+      <p class="empty-text">Tidak ada template ditemukan untuk kategori ini.</p>
     </div>
   </div>
 </template>
@@ -52,7 +68,6 @@ import { ref, computed, onMounted } from 'vue'
 import { 
   getAllTemplates, 
   getTemplatesByCategory, 
-  getCategories,
   PackagingCategory 
 } from '../templates/registry'
 import { useMockupStore } from '../stores/mockupStore'
@@ -60,39 +75,90 @@ import { useMockupStore } from '../stores/mockupStore'
 const mockupStore = useMockupStore()
 
 const templates = ref(getAllTemplates())
-const categories = ref<PackagingCategory[]>(getCategories())
-const selectedCategory = ref<PackagingCategory | 'all'>('all')
+const selectedCategory = ref<string>('all')
 const activeTemplateId = ref<string | null>(null)
 
-const categoryLabels: Record<PackagingCategory | 'all', string> = {
-  all: 'All',
-  box: 'Box',
-  bottle: 'Bottle',
+// Category mapping for filtering
+const categoryFilters = [
+  { id: 'all', name: 'Semua' },
+  { id: 'minuman', name: 'Minuman' },
+  { id: 'makanan', name: 'Makanan' },
+  { id: 'kemasan', name: 'Kemasan' },
+  { id: 'aksesoris', name: 'Aksesoris' }
+]
+
+// Category mapping for display
+const categoryLabels: Record<PackagingCategory, string> = {
+  box: 'Kotak',
+  bottle: 'Botol',
   pouch: 'Pouch',
   tube: 'Tube',
-  bag: 'Bag'
+  bag: 'Tas',
+  cup: 'Gelas',
+  container: 'Wadah',
+  bowl: 'Mangkok',
+  takeaway: 'Takeaway',
+  perfume: 'Parfum'
 }
 
-const categoryIcons: Record<PackagingCategory, string> = {
-  box: '📦',
-  bottle: '🍾',
-  pouch: '🧴',
-  tube: '🧴',
-  bag: '🛍️'
+// Category colors for badges
+const categoryColors: Record<PackagingCategory, string> = {
+  box: '#3b82f6',
+  bottle: '#10b981',
+  pouch: '#8b5cf6',
+  tube: '#f59e0b',
+  bag: '#ef4444',
+  cup: '#06b6d4',
+  container: '#84cc16',
+  bowl: '#f97316',
+  takeaway: '#6366f1',
+  perfume: '#ec4899'
+}
+
+// Category to filter mapping
+const categoryToFilter = (category: PackagingCategory): string => {
+  // Minuman: Gelas Plastik, Perfume Bottle
+  if (category === 'cup' || category === 'perfume') return 'minuman'
+  // Makanan: Food Container, Paper Bowl, Takeaway Box
+  if (category === 'container' || category === 'bowl' || category === 'takeaway') return 'makanan'
+  // Kemasan: Paper Bag, Custom Packaging
+  if (category === 'bag' || category === 'pouch') return 'kemasan'
+  // Default to aksesoris
+  return 'aksesoris'
 }
 
 const filteredTemplates = computed(() => {
   if (selectedCategory.value === 'all') {
     return templates.value
   }
-  return getTemplatesByCategory(selectedCategory.value as PackagingCategory)
+  
+  return templates.value.filter(template => 
+    categoryToFilter(template.category) === selectedCategory.value
+  )
 })
 
-const getCategoryIcon = (category: PackagingCategory): string => {
-  return categoryIcons[category] || '📦'
+const getCategoryLabel = (category: PackagingCategory): string => {
+  return categoryLabels[category] || category
 }
 
-const selectCategory = (category: PackagingCategory | 'all') => {
+const getThumbnailStyle = (template: any) => {
+  const color = categoryColors[template.category] || '#6b7280'
+  return {
+    background: `linear-gradient(135deg, ${color}20 0%, ${color}40 100%)`,
+    borderColor: `${color}30`
+  }
+}
+
+const getTemplateInitials = (name: string): string => {
+  return name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2)
+}
+
+const truncateDescription = (description: string): string => {
+  if (description.length <= 60) return description
+  return description.substring(0, 57) + '...'
+}
+
+const selectCategory = (category: string) => {
   selectedCategory.value = category
 }
 
@@ -116,25 +182,33 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .template-gallery {
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .gallery-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
-.gallery-header h3 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
+.gallery-title {
+  margin: 0 0 4px 0;
+  font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: #1f2937;
+}
+
+.gallery-subtitle {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 .category-tabs {
@@ -145,39 +219,41 @@ onMounted(() => {
 
 .category-tab {
   padding: 8px 16px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e5e7eb;
   border-radius: 20px;
   background: white;
-  color: #666;
+  color: #6b7280;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .category-tab:hover {
-  border-color: #4f46e5;
-  color: #4f46e5;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
 }
 
 .category-tab.active {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: white;
 }
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .template-card {
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
   cursor: pointer;
   transition: all 0.3s ease;
   background: white;
@@ -186,25 +262,23 @@ onMounted(() => {
 }
 
 .template-card:hover {
-  border-color: #4f46e5;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+  border-color: #3b82f6;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
 }
 
 .template-card.active {
-  border-color: #4f46e5;
-  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
 }
 
 .template-thumbnail {
   position: relative;
-  aspect-ratio: 1;
-  background: #f8fafc;
-  border-radius: 6px;
+  aspect-ratio: 16/9;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
   overflow: hidden;
 }
 
@@ -214,17 +288,43 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid;
 }
 
-.template-icon {
+.template-name {
   font-size: 32px;
-  opacity: 0.8;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.3);
 }
+
+.category-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-badge.box { background: #3b82f6; }
+.category-badge.bottle { background: #10b981; }
+.category-badge.pouch { background: #8b5cf6; }
+.category-badge.tube { background: #f59e0b; }
+.category-badge.bag { background: #ef4444; }
+.category-badge.cup { background: #06b6d4; }
+.category-badge.container { background: #84cc16; }
+.category-badge.bowl { background: #f97316; }
+.category-badge.takeaway { background: #6366f1; }
+.category-badge.perfume { background: #ec4899; }
 
 .active-indicator {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 12px;
 }
 
 .active-dot {
@@ -236,39 +336,68 @@ onMounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.template-info {
+.template-content {
+  padding: 16px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.template-info h4 {
-  margin: 0 0 4px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.template-category {
+.template-title {
   margin: 0 0 8px 0;
-  font-size: 12px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
 }
 
 .template-description {
-  margin: 0;
-  font-size: 12px;
-  color: #888;
-  line-height: 1.4;
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.template-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.tag {
+  padding: 3px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #6b7280;
+  background: #f9fafb;
 }
 
 .empty-state {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #888;
+  padding: 40px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  color: #9ca3af;
   font-size: 14px;
+  text-align: center;
 }
 
 /* Scrollbar styling */
@@ -288,5 +417,24 @@ onMounted(() => {
 
 .gallery-grid::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  
+  .template-gallery {
+    padding: 16px;
+  }
 }
 </style>

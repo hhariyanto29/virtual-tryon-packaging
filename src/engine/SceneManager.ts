@@ -7,6 +7,11 @@ import { BottleGeometry } from './geometries/BottleGeometry'
 import { PouchGeometry } from './geometries/PouchGeometry'
 import { TubeGeometry } from './geometries/TubeGeometry'
 import { PaperBagGeometry } from './geometries/PaperBagGeometry'
+import { CupGeometry } from './geometries/CupGeometry'
+import { FoodContainerGeometry } from './geometries/FoodContainerGeometry'
+import { PaperBowlGeometry } from './geometries/PaperBowlGeometry'
+import { TakeawayBoxGeometry } from './geometries/TakeawayBoxGeometry'
+import { PerfumeBottleGeometry } from './geometries/PerfumeBottleGeometry'
 import { PackagingTemplate } from '../templates/types'
 
 export type LightingPreset = 'studio' | 'outdoor' | 'dramatic'
@@ -394,6 +399,63 @@ export class SceneManager {
           depth: template.geometry.dimensions.depth,
           handleRadius: 0.1,
           handleHeight: template.geometry.dimensions.height * 0.3,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'cup':
+        geometry = new CupGeometry({
+          radiusTop: template.geometry.dimensions.radiusTop || 1.2,
+          radiusBottom: template.geometry.dimensions.radiusBottom || 0.9,
+          height: template.geometry.dimensions.height,
+          radialSegments: template.geometry.dimensions.radialSegments || 32,
+          heightSegments: template.geometry.dimensions.heightSegments || 8,
+          openTop: true,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'container':
+        geometry = new FoodContainerGeometry({
+          width: template.geometry.dimensions.width,
+          height: template.geometry.dimensions.height,
+          depth: template.geometry.dimensions.depth,
+          lidThickness: template.geometry.dimensions.lidThickness || template.geometry.dimensions.height * 0.1,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'bowl':
+        geometry = new PaperBowlGeometry({
+          radiusTop: template.geometry.dimensions.radiusTop || 1.2,
+          radiusBottom: template.geometry.dimensions.radiusBottom || 0.6,
+          height: template.geometry.dimensions.height,
+          thickness: template.geometry.dimensions.thickness || template.geometry.dimensions.height * 0.05,
+          segments: template.geometry.dimensions.segments || 32,
+          withLid: false,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'takeaway':
+        geometry = new TakeawayBoxGeometry({
+          width: template.geometry.dimensions.width,
+          height: template.geometry.dimensions.height,
+          depth: template.geometry.dimensions.depth,
+          lidThickness: template.geometry.dimensions.lidThickness || template.geometry.dimensions.height * 0.1,
+          hingeAngle: template.geometry.dimensions.hingeAngle || 15 * (Math.PI / 180),
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'perfume':
+        geometry = new PerfumeBottleGeometry({
+          baseRadius: template.geometry.dimensions.baseRadius || 0.8,
+          neckRadius: template.geometry.dimensions.neckRadius || 0.3,
+          bodyRadius: template.geometry.dimensions.bodyRadius || 1.0,
+          totalHeight: template.geometry.dimensions.height,
+          neckHeight: template.geometry.dimensions.neckHeight || template.geometry.dimensions.height * 0.18,
+          segments: template.geometry.dimensions.segments || 32,
           color: template.defaultMaterial.color
         })
         break
