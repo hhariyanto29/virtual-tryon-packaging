@@ -8,32 +8,8 @@
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <!-- Left sidebar: Controls -->
+        <!-- Left sidebar: Scene Controls -->
         <div class="lg:col-span-1 space-y-6">
-          <!-- Design Uploader -->
-          <div class="bg-white rounded-xl shadow-lg p-6">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">Design Upload</h2>
-            <DesignUploader
-              :selected-face="selectedFace"
-              @upload="handleDesignUpload"
-              @apply-to-face="handleApplyToFace"
-              @apply-to-all="handleApplyToAll"
-              @clear="handleClearUpload"
-            />
-          </div>
-
-          <!-- Face Selector -->
-          <div class="bg-white rounded-xl shadow-lg p-6">
-            <FaceSelector
-              :selected-face="selectedFace"
-              :textures="textureUrls"
-              @select="selectFace"
-              @remove-texture="handleRemoveTexture"
-              @copy-to-others="handleCopyToOthers"
-              @reset-all="handleResetAllTextures"
-            />
-          </div>
-
           <!-- Scene Settings -->
           <div class="bg-white rounded-xl shadow-lg p-6">
             <h2 class="text-xl font-semibold mb-4 text-gray-800">Scene Settings</h2>
@@ -203,6 +179,115 @@
               </div>
             </div>
           </div>
+
+          <!-- Face Selection -->
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Face Selection</h2>
+            
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="face in faces"
+                :key="face"
+                @click="selectFace(face)"
+                :class="[
+                  'px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex flex-col items-center justify-center',
+                  selectedFace === face
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow'
+                ]"
+              >
+                <span class="text-lg mb-1">{{ getFaceIcon(face) }}</span>
+                <span>{{ face }}</span>
+              </button>
+            </div>
+
+            <!-- Face Controls -->
+            <div v-if="selectedFace" class="mt-6 pt-6 border-t border-gray-200">
+              <h3 class="text-lg font-medium text-gray-800 mb-4">
+                {{ selectedFace.charAt(0).toUpperCase() + selectedFace.slice(1) }} Face
+              </h3>
+              
+              <div class="space-y-4">
+                <!-- Color Picker -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                  <div class="flex items-center gap-3">
+                    <input 
+                      v-model="faceColor"
+                      type="color"
+                      class="w-12 h-12 cursor-pointer rounded-lg border border-gray-300"
+                      @change="updateFaceColor"
+                    >
+                    <input 
+                      v-model="faceColor"
+                      type="text"
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                      @change="updateFaceColor"
+                    >
+                  </div>
+                </div>
+
+                <!-- Opacity Slider -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Opacity: {{ (faceOpacity * 100).toFixed(0) }}%
+                  </label>
+                  <input 
+                    v-model="faceOpacity"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    @input="updateFaceOpacity"
+                  >
+                </div>
+
+                <!-- Texture Upload -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Texture</label>
+                  <div class="space-y-2">
+                    <div class="flex gap-2">
+                      <input
+                        type="file"
+                        ref="fileInput"
+                        accept="image/*"
+                        class="hidden"
+                        @change="handleFileUpload"
+                      >
+                      <button
+                        @click="triggerFileUpload"
+                        class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition"
+                      >
+                        Upload Image
+                      </button>
+                      <button
+                        v-if="hasTexture(selectedFace)"
+                        @click="clearTexture(selectedFace)"
+                        class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    
+                    <button
+                      @click="applyTextureToAll"
+                      class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition"
+                    >
+                      Apply to All Faces
+                    </button>
+                    
+                    <button
+                      @click="resetTextures"
+                      class="w-full px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium transition"
+                    >
+                      Reset All Textures
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Main Canvas Area -->
@@ -286,46 +371,21 @@
                   <span>Textured Faces:</span>
                   <span class="font-medium">{{ texturedFacesCount }} / 6</span>
                 </div>
-                <div class="flex justify-between">
-                  <span>Selected Face:</span>
-                  <span class="font-medium">
-                    {{ selectedFace ? selectedFace.charAt(0).toUpperCase() + selectedFace.slice(1) : 'None' }}
-                  </span>
-                </div>
               </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-800 mb-3">Applied Textures</h3>
+              <h3 class="text-lg font-semibold text-gray-800 mb-3">Quick Templates</h3>
               <div class="space-y-2">
-                <div
-                  v-for="face in faces"
-                  :key="face"
-                  class="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200"
+                <button
+                  v-for="template in quickTemplates"
+                  :key="template.name"
+                  @click="applyQuickTemplate(template)"
+                  class="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition"
                 >
-                  <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center">
-                      {{ getFaceIcon(face) }}
-                    </div>
-                    <span class="text-sm font-medium text-gray-700">
-                      {{ face.charAt(0).toUpperCase() + face.slice(1) }}
-                    </span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span
-                      v-if="textureUrls[face]"
-                      class="text-xs text-green-600 font-medium"
-                    >
-                      ✓ Textured
-                    </span>
-                    <span
-                      v-else
-                      class="text-xs text-gray-400"
-                    >
-                      Empty
-                    </span>
-                  </div>
-                </div>
+                  <div class="font-medium text-gray-800">{{ template.name }}</div>
+                  <div class="text-sm text-gray-500">{{ template.dimensions }}</div>
+                </button>
               </div>
             </div>
 
@@ -366,16 +426,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import MockupCanvas from '../components/MockupCanvas.vue'
-import DesignUploader from '../components/DesignUploader.vue'
-import FaceSelector from '../components/FaceSelector.vue'
 import { useMockupStore, type BoxFace } from '../stores/mockupStore'
-import { useTextureManager, type TextureFit } from '../composables/useTextureManager'
 import type { LightingPreset, CameraPreset } from '../engine/SceneManager'
 import type { MaterialType } from '../engine/BoxMockup'
 
 const store = useMockupStore()
-const textureManager = useTextureManager()
 const canvasRef = ref<InstanceType<typeof MockupCanvas> | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 // Scene controls
 const lightingPresets: LightingPreset[] = ['studio', 'outdoor', 'dramatic']
@@ -393,28 +450,20 @@ const autoRotate = ref(false)
 const faces: BoxFace[] = ['front', 'back', 'left', 'right', 'top', 'bottom']
 const selectedFace = ref<BoxFace>('front')
 const dimensions = ref({ width: 2.5, height: 3.5, depth: 2 })
+const faceColor = ref('#ffffff')
+const faceOpacity = ref(1)
+
+// Quick templates
+const quickTemplates = [
+  { name: 'Standard Box', dimensions: '2.5 × 3.5 × 2' },
+  { name: 'Slim Package', dimensions: '1.5 × 4 × 1' },
+  { name: 'Cube', dimensions: '3 × 3 × 3' },
+  { name: 'Flat Box', dimensions: '4 × 2 × 0.5' }
+]
 
 // Computed
 const texturedFacesCount = computed(() => {
   return faces.filter(face => store.getTexture(face) !== undefined).length
-})
-
-const textureUrls = computed(() => {
-  const urls: Record<BoxFace, string | null> = {
-    front: null,
-    back: null,
-    left: null,
-    right: null,
-    top: null,
-    bottom: null
-  }
-  
-  faces.forEach(face => {
-    const texture = store.getTexture(face)
-    urls[face] = texture?.url || null
-  })
-  
-  return urls
 })
 
 // Methods
@@ -484,127 +533,114 @@ const setMaterialType = (type: MaterialType) => {
 
 const selectFace = (face: BoxFace) => {
   selectedFace.value = face
-  store.setSelectedFace(face)
+  faceColor.value = store.getColor(face) || '#ffffff'
+  faceOpacity.value = store.getOpacity(face) || 1
 }
 
-const handleDesignUpload = (file: File) => {
-  console.log('Design uploaded:', file.name)
-}
-
-const handleApplyToFace = async (data: { face: BoxFace, file: File, fit: TextureFit }) => {
-  const { face, file, fit } = data
-  
-  try {
-    // Apply texture via texture manager
-    const textureData = await textureManager.setTexture(face, file, fit)
-    
-    // Apply to 3D canvas
+const updateFaceColor = () => {
+  if (selectedFace.value) {
+    store.setColor(selectedFace.value, faceColor.value)
     if (canvasRef.value) {
-      await canvasRef.value.applyTexture(face, textureData.url)
+      canvasRef.value.setColor(selectedFace.value, faceColor.value)
     }
-    
-    // Store in mockup store
-    store.setTexture(face, {
-      url: textureData.url,
-      name: file.name
-    })
-    
-    console.log(`Texture applied to ${face} face`)
-  } catch (error) {
-    console.error('Failed to apply texture:', error)
-    alert('Failed to apply texture. Please try another image.')
   }
 }
 
-const handleApplyToAll = async (data: { file: File, fit: TextureFit }) => {
-  const { file, fit } = data
-  
-  try {
-    // Apply to all faces via texture manager
-    await textureManager.applyToAllFaces(file, fit)
-    
-    // Apply to 3D canvas
+const updateFaceOpacity = () => {
+  if (selectedFace.value) {
+    store.setOpacity(selectedFace.value, faceOpacity.value)
     if (canvasRef.value) {
-      await canvasRef.value.applyTextureToAll(textureManager.getTextureUrl('front')!)
+      canvasRef.value.setOpacity(selectedFace.value, faceOpacity.value)
     }
-    
-    // Store in mockup store for all faces
-    faces.forEach(face => {
-      store.setTexture(face, {
-        url: textureManager.getTextureUrl(face)!,
+  }
+}
+
+const hasTexture = (face: BoxFace): boolean => {
+  return store.getTexture(face) !== undefined
+}
+
+const triggerFileUpload = () => {
+  fileInput.value?.click()
+}
+
+const handleFileUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files?.length || !selectedFace.value) return
+
+  const file = input.files[0]
+  const objectUrl = URL.createObjectURL(file)
+
+  try {
+    if (canvasRef.value) {
+      await canvasRef.value.applyTexture(selectedFace.value, objectUrl)
+      store.setTexture(selectedFace.value, {
+        url: objectUrl,
         name: file.name
       })
-    })
-    
-    console.log('Texture applied to all faces')
+    }
   } catch (error) {
-    console.error('Failed to apply texture to all faces:', error)
-    alert('Failed to apply texture. Please try another image.')
+    console.error('Failed to apply texture:', error)
+    alert('Failed to load texture. Please try another image.')
   }
+
+  // Clear input
+  input.value = ''
 }
 
-const handleClearUpload = () => {
-  console.log('Upload cleared')
-}
-
-const handleRemoveTexture = (face: BoxFace) => {
-  // Remove from texture manager
-  textureManager.removeTexture(face)
-  
-  // Remove from 3D canvas
+const clearTexture = (face: BoxFace) => {
   if (canvasRef.value) {
     canvasRef.value.clearTexture(face)
   }
-  
-  // Remove from store
   store.removeTexture(face)
-  
-  console.log(`Texture removed from ${face} face`)
 }
 
-const handleCopyToOthers = (sourceFace: BoxFace) => {
-  const sourceTexture = textureManager.getTexture(sourceFace)
-  if (!sourceTexture) return
+const applyTextureToAll = async () => {
+  if (!fileInput.value) return
   
-  // Copy to other faces via texture manager
-  textureManager.copyToAllFaces(sourceFace)
-  
-  // Apply to 3D canvas for all other faces
-  faces.forEach(face => {
-    if (face !== sourceFace) {
-      const textureUrl = textureManager.getTextureUrl(face)
-      if (textureUrl && canvasRef.value) {
-        canvasRef.value.applyTexture(face, textureUrl)
+  const input = fileInput.value
+  if (!input.files?.length) {
+    triggerFileUpload()
+    return
+  }
+
+  const file = input.files[0]
+  const objectUrl = URL.createObjectURL(file)
+
+  try {
+    if (canvasRef.value) {
+      await canvasRef.value.applyTextureToAll(objectUrl)
+      
+      // Store texture for all faces
+      faces.forEach(face => {
         store.setTexture(face, {
-          url: textureUrl,
-          name: `${sourceTexture.name} (copy)`
+          url: objectUrl,
+          name: file.name
         })
-      }
+      })
     }
-  })
-  
-  console.log(`Texture copied from ${sourceFace} to all other faces`)
+  } catch (error) {
+    console.error('Failed to apply texture to all faces:', error)
+    alert('Failed to load texture. Please try another image.')
+  }
 }
 
-const handleResetAllTextures = () => {
-  // Reset texture manager
-  textureManager.clearAllTextures()
-  
-  // Reset 3D canvas textures
+const resetTextures = () => {
   if (canvasRef.value) {
     canvasRef.value.resetTextures()
   }
-  
-  // Reset store textures
   faces.forEach(face => {
     store.removeTexture(face)
   })
-  
-  console.log('All textures reset')
 }
 
 const resetCamera = () => {
   setCameraPreset('reset')
+}
+
+const applyQuickTemplate = (template: typeof quickTemplates[0]) => {
+  const dims = template.dimensions.split(' × ').map(Number)
+  dimensions.value = { width: dims[0], height: dims[1], depth: dims[2] }
+  updateDimensions()
 }
 
 const downloadPNG = () => {
@@ -635,9 +671,8 @@ const resetAll = () => {
   // Reset box
   dimensions.value = { width: 2.5, height: 3.5, depth: 2 }
   selectedFace.value = 'front'
-  
-  // Reset textures
-  handleResetAllTextures()
+  faceColor.value = '#ffffff'
+  faceOpacity.value = 1
   
   // Apply resets
   setLightingPreset('studio')
@@ -646,11 +681,17 @@ const resetAll = () => {
   toggleGrid()
   toggleEdges()
   updateDimensions()
+  resetTextures()
   
   // Reset store
   store.reset()
   
-  console.log('All settings reset')
+  // Reset face colors
+  faces.forEach(face => {
+    if (canvasRef.value) {
+      canvasRef.value.setColor(face, '#ffffff')
+    }
+  })
 }
 
 // Canvas events
@@ -675,9 +716,6 @@ onMounted(() => {
   faces.forEach(face => {
     store.setColor(face, '#ffffff')
   })
-  
-  // Initialize selected face
-  store.setSelectedFace('front')
 })
 </script>
 
