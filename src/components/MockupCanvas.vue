@@ -33,7 +33,7 @@ import { BoxMockup, type BoxFace, type MaterialType } from '../engine/BoxMockup'
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const loading = ref(true)
 const textureLoading = ref(false)
-const showFPS = ref(import.meta.env.DEV) // Show FPS in dev mode
+const showFPS = ref((import.meta as any).env.MODE === 'development') // Show FPS in dev mode
 const fps = ref(0)
 
 let sceneManager: SceneManager | null = null

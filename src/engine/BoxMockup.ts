@@ -10,7 +10,8 @@ export class BoxMockup {
   private edgesMesh: THREE.LineSegments | null = null
   private geometry: THREE.BoxGeometry
   private defaultMaterials: Map<BoxFace, THREE.MeshStandardMaterial>
-  private currentMaterialType: MaterialType = 'matte'
+  private _currentMaterialType: MaterialType = 'matte'
+  private renderer: THREE.WebGLRenderer | null = null
 
   constructor(width: number = 2.5, height: number = 3.5, depth: number = 2) {
     this.textureLoader = new THREE.TextureLoader()
@@ -25,7 +26,7 @@ export class BoxMockup {
     
     const faceNames: BoxFace[] = ['right', 'left', 'top', 'bottom', 'front', 'back']
     
-    faceNames.forEach((face, index) => {
+    faceNames.forEach((face) => {
       const material = this.createMaterial('matte', defaultColor)
       material.name = face
       this.materials.set(face, material)
@@ -90,7 +91,7 @@ export class BoxMockup {
         imageUrl,
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace
-          texture.anisotropy = this.textureLoader.manager.getMaxAnisotropy()
+          texture.anisotropy = this.renderer ? this.renderer.capabilities.getMaxAnisotropy() : 1
           const material = this.materials.get(face)
           if (material) {
             material.map = texture
@@ -160,8 +161,12 @@ export class BoxMockup {
     }
   }
 
+  public getMaterialType(): MaterialType {
+    return this._currentMaterialType
+  }
+
   public setMaterialType(type: MaterialType): void {
-    this.currentMaterialType = type
+    this._currentMaterialType = type
     const faceNames: BoxFace[] = ['front', 'back', 'left', 'right', 'top', 'bottom']
     
     faceNames.forEach(face => {

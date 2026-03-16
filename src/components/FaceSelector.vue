@@ -81,7 +81,7 @@
           <!-- Texture Preview -->
           <div v-if="getTextureUrl(face)" class="texture-preview">
             <img
-              :src="getTextureUrl(face)"
+              :src="getTextureUrl(face)!"
               :alt="`${face} texture`"
               class="thumbnail-image"
             />
@@ -262,8 +262,9 @@ const resetAllTextures = () => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
 .face-selector {
-  @apply space-y-6;
+  @apply flex flex-col gap-6;
 }
 
 .selector-header {
@@ -323,11 +324,11 @@ const resetAllTextures = () => {
 }
 
 .thumbnail-overlay {
-  @apply absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center;
+  @apply absolute inset-0 bg-black/0 hover:bg-black/30 transition-all duration-200 flex items-center justify-center;
 }
 
 .remove-btn {
-  @apply p-1 bg-white bg-opacity-90 rounded-full text-gray-700 hover:text-red-600 hover:bg-opacity-100 transition-colors;
+  @apply p-1 bg-white/80 rounded-full text-gray-700 hover:text-red-600 hover:bg-white transition-colors;
   opacity: 0;
 }
 

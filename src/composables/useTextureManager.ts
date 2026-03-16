@@ -70,7 +70,7 @@ export function useTextureManager(options: UseTextureManagerOptions = {}) {
     file: File,
     fit: TextureFit = 'cover'
   ): Promise<TextureData> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       // Clean up existing texture if any
       removeTexture(face)
 
@@ -278,13 +278,13 @@ export function useTextureManager(options: UseTextureManagerOptions = {}) {
     // Simple LRU cache cleanup - remove oldest textures if cache is too large
     const textureEntries = Object.entries(textures.value)
       .filter(([_, texture]) => texture !== null)
-      .sort((a, b) => {
+      .sort(() => {
         // Simple timestamp-based sorting (we don't have timestamps yet)
         return 0
       })
 
     while (cacheSize.value > maxCacheSize * 1024 * 1024 && textureEntries.length > 0) {
-      const [face, texture] = textureEntries.shift()!
+      const [face, _texture] = textureEntries.shift()!
       removeTexture(face as BoxFace)
     }
   }

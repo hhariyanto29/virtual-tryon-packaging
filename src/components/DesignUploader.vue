@@ -36,7 +36,7 @@
         class="hidden"
         accept=".png,.jpg,.jpeg,.svg,.webp"
         @change="handleFileSelect"
-      >
+      />
 
       <!-- Browse Button -->
       <button
@@ -155,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import type { BoxFace } from '../stores/mockupStore'
 
 interface Props {
@@ -204,11 +204,6 @@ const textureFitOptions = [
   { value: 'contain' as TextureFit, label: 'Contain', icon: '📐' },
   { value: 'cover' as TextureFit, label: 'Cover', icon: '🖼️' }
 ]
-
-// Computed
-const hasSelectedFace = computed(() => {
-  return !!props.selectedFace
-})
 
 // Methods
 const validateFile = (file: File): boolean => {
@@ -357,8 +352,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
 .design-uploader {
-  @apply space-y-4;
+  @apply flex flex-col gap-4;
 }
 
 .drop-zone {
@@ -427,7 +423,7 @@ onUnmounted(() => {
 }
 
 .loading-overlay {
-  @apply absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center;
+  @apply absolute inset-0 bg-white/80 flex flex-col items-center justify-center;
 }
 
 .loading-spinner {
@@ -502,4 +498,4 @@ onUnmounted(() => {
 
 .apply-all {
   @apply bg-gray-800 text-white hover:bg-gray-900 focus:ring-gray-500;
-}
+}</style>

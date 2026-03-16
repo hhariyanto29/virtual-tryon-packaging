@@ -1,6 +1,13 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
+import { BaseGeometry } from './geometries/BaseGeometry'
+import { BoxGeometry } from './geometries/BoxGeometry'
+import { BottleGeometry } from './geometries/BottleGeometry'
+import { PouchGeometry } from './geometries/PouchGeometry'
+import { TubeGeometry } from './geometries/TubeGeometry'
+import { PaperBagGeometry } from './geometries/PaperBagGeometry'
+import { PackagingTemplate } from '../templates/types'
 
 export type LightingPreset = 'studio' | 'outdoor' | 'dramatic'
 export type CameraPreset = 'front' | 'back' | 'top' | 'isometric' | 'reset'
@@ -19,6 +26,10 @@ export class SceneManager {
   }
   private isAutoRotating: boolean = false
   private autoRotateSpeed: number = 0.5
+  
+  private currentGeometry: BaseGeometry | null = null
+  private templateHistory: string[] = []
+  private textureMemory: Map<string, Map<string, string>> = new Map() // templateId -> faceId -> textureUrl
 
   constructor(canvas: HTMLCanvasElement) {
     // Scene with gradient background
@@ -316,10 +327,211 @@ export class SceneManager {
     return this.renderer.info.render.frame / 1000
   }
 
+  // Template management methods
+  public async loadTemplate(template: PackagingTemplate): Promise<void> {
+    // Save camera position before switching
+    const cameraPosition = this.camera.position.clone()
+    const cameraTarget = this.controls.target.clone()
+    
+    // Dispose current geometry
+    if (this.currentGeometry) {
+      this.currentGeometry.dispose()
+      this.currentGeometry = null
+    }
+    
+    // Create new geometry based on template type
+    let geometry: BaseGeometry
+    
+    switch (template.category) {
+      case 'box':
+        geometry = new BoxGeometry({
+          width: template.geometry.dimensions.width,
+          height: template.geometry.dimensions.height,
+          depth: template.geometry.dimensions.depth,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'bottle':
+        geometry = new BottleGeometry({
+          height: template.geometry.dimensions.height,
+          radius: template.geometry.dimensions.radius || 0.5,
+          neckHeight: template.geometry.dimensions.height * 0.2,
+          neckRadius: (template.geometry.dimensions.radius || 0.5) * 0.4,
+          capHeight: template.geometry.dimensions.height * 0.1,
+          capRadius: (template.geometry.dimensions.radius || 0.5) * 0.45,
+          segments: template.geometry.dimensions.segments,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'pouch':
+        geometry = new PouchGeometry({
+          width: template.geometry.dimensions.width,
+          height: template.geometry.dimensions.height,
+          depth: template.geometry.dimensions.depth,
+          curveHeight: template.geometry.dimensions.height * 0.1,
+          segments: template.geometry.dimensions.segments,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'tube':
+        geometry = new TubeGeometry({
+          height: template.geometry.dimensions.height,
+          radius: template.geometry.dimensions.radius || 0.5,
+          thickness: template.geometry.dimensions.depth,
+          capHeight: template.geometry.dimensions.height * 0.1,
+          segments: template.geometry.dimensions.segments,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      case 'bag':
+        geometry = new PaperBagGeometry({
+          width: template.geometry.dimensions.width,
+          height: template.geometry.dimensions.height,
+          depth: template.geometry.dimensions.depth,
+          handleRadius: 0.1,
+          handleHeight: template.geometry.dimensions.height * 0.3,
+          color: template.defaultMaterial.color
+        })
+        break
+        
+      default:
+        throw new Error(`Unsupported template category: ${template.category}`)
+    }
+    
+    // Set material type
+    geometry.setMaterial(template.defaultMaterial.type as any)
+    
+    // Add to scene
+    this.scene.add(geometry.getMesh())
+    this.currentGeometry = geometry
+    
+    // Restore textures from memory if available
+    await this.restoreTextures(template.id)
+    
+    // Restore camera position with smooth transition
+    this.animateCameraToPosition(cameraPosition, cameraTarget, 500)
+    
+    // Add to history
+    this.templateHistory.push(template.id)
+    if (this.templateHistory.length > 10) {
+      this.templateHistory.shift()
+    }
+  }
+  
+  private async restoreTextures(templateId: string): Promise<void> {
+    if (!this.currentGeometry) return
+    
+    const textureMap = this.textureMemory.get(templateId)
+    if (!textureMap) return
+    
+    const promises: Promise<void>[] = []
+    
+    textureMap.forEach((textureUrl, faceId) => {
+      promises.push(this.currentGeometry!.applyTexture(faceId, textureUrl))
+    })
+    
+    await Promise.all(promises)
+  }
+  
+  private animateCameraToPosition(
+    targetPosition: THREE.Vector3,
+    targetLookAt: THREE.Vector3,
+    duration: number = 1000
+  ): void {
+    const startPosition = this.camera.position.clone()
+    const startLookAt = this.controls.target.clone()
+    const startTime = Date.now()
+    
+    const animateTransition = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // Easing function
+      const easeProgress = progress < 0.5 
+        ? 2 * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2
+      
+      // Interpolate position
+      this.camera.position.lerpVectors(startPosition, targetPosition, easeProgress)
+      
+      // Interpolate look-at target
+      this.controls.target.lerpVectors(startLookAt, targetLookAt, easeProgress)
+      this.controls.update()
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateTransition)
+      }
+    }
+    
+    animateTransition()
+  }
+  
+  public async applyTextureToFace(faceId: string, textureUrl: string): Promise<void> {
+    if (!this.currentGeometry) {
+      throw new Error('No template loaded')
+    }
+    
+    await this.currentGeometry.applyTexture(faceId, textureUrl)
+    
+    // Save to texture memory
+    const currentTemplateId = this.templateHistory[this.templateHistory.length - 1]
+    if (currentTemplateId) {
+      let templateMemory = this.textureMemory.get(currentTemplateId)
+      if (!templateMemory) {
+        templateMemory = new Map()
+        this.textureMemory.set(currentTemplateId, templateMemory)
+      }
+      templateMemory.set(faceId, textureUrl)
+    }
+  }
+  
+  public clearTextureFromFace(faceId: string): void {
+    if (!this.currentGeometry) return
+    
+    this.currentGeometry.clearTexture(faceId)
+    
+    // Remove from texture memory
+    const currentTemplateId = this.templateHistory[this.templateHistory.length - 1]
+    if (currentTemplateId) {
+      const templateMemory = this.textureMemory.get(currentTemplateId)
+      if (templateMemory) {
+        templateMemory.delete(faceId)
+      }
+    }
+  }
+  
+  public setMaterialType(type: 'matte' | 'glossy' | 'metallic'): void {
+    if (!this.currentGeometry) return
+    
+    this.currentGeometry.setMaterial(type)
+  }
+  
+  public getCurrentGeometry(): BaseGeometry | null {
+    return this.currentGeometry
+  }
+  
+  public getTextureableFaces(): Array<{ id: string; name: string }> {
+    if (!this.currentGeometry) return []
+    
+    return this.currentGeometry.getTextureableFaces().map(face => ({
+      id: face.id,
+      name: face.name
+    }))
+  }
+
   public dispose(): void {
     this.stopAnimation()
     this.controls.dispose()
     this.renderer.dispose()
+    
+    // Dispose current geometry
+    if (this.currentGeometry) {
+      this.currentGeometry.dispose()
+    }
     
     // Dispose lights
     this.lights.ambient.dispose()
@@ -332,6 +544,9 @@ export class SceneManager {
       const material = this.gridHelper.material as THREE.Material
       material.dispose()
     }
+    
+    // Clear texture memory
+    this.textureMemory.clear()
     
     window.removeEventListener('resize', this.handleResize.bind(this))
   }

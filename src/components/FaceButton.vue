@@ -54,7 +54,7 @@ interface Emits {
   (e: 'click'): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 defineEmits<Emits>()
 
 // Methods
@@ -76,6 +76,7 @@ const getFaceLabel = (): string => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
 .face-button {
   @apply relative w-16 h-16 border-2 border-gray-300 rounded-lg transition-all duration-200;
   @apply hover:border-indigo-400 hover:shadow-md;
@@ -129,11 +130,11 @@ const getFaceLabel = (): string => {
 }
 
 .texture-overlay {
-  @apply absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center;
+  @apply absolute inset-0 bg-black  flex items-center justify-center;
 }
 
 .texture-label {
-  @apply text-xs font-bold text-white bg-black bg-opacity-50 px-2 py-1 rounded;
+  @apply text-xs font-bold text-white bg-black  px-2 py-1 rounded;
 }
 
 .empty-face {

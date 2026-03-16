@@ -682,6 +682,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
 /* Custom range slider */
 input[type="range"] {
   -webkit-appearance: none;
