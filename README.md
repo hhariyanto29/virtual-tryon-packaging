@@ -1,4 +1,4 @@
-# Nemu Mockup Tool
+# Bungkus Indonesia
 
 A 3D packaging mockup generator built with Vue 3, Three.js, and Tailwind CSS. Create professional packaging mockups with real-time 3D preview.
 
@@ -24,7 +24,7 @@ A 3D packaging mockup generator built with Vue 3, Three.js, and Tailwind CSS. Cr
 ## Project Structure
 
 ```
-nemu-mockup-tool/
+bungkus-indonesia/
 ├── src/
 │   ├── components/     # Vue components
 │   │   └── MockupCanvas.vue
@@ -60,7 +60,7 @@ nemu-mockup-tool/
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd nemu-mockup-tool
+   cd bungkus-indonesia
    ```
 
 2. Install dependencies:
@@ -79,12 +79,12 @@ nemu-mockup-tool/
 
 #### Development
 ```bash
-docker-compose up nemu-mockup-dev
+docker-compose up bungkus-indonesia-dev
 ```
 
 #### Production
 ```bash
-docker-compose up nemu-mockup-tool
+docker-compose up bungkus-indonesia
 ```
 
 The production build will be available at `http://localhost:8080`
@@ -155,8 +155,8 @@ npm run preview -- --host 0.0.0.0 --port 4173
 
 ### Docker Production Build
 ```bash
-docker build -t nemu-mockup-tool .
-docker run -p 8080:80 nemu-mockup-tool
+docker build -t bungkus-indonesia .
+docker run -p 8080:80 bungkus-indonesia
 ```
 
 ## API Reference

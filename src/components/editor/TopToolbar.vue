@@ -11,7 +11,7 @@
           <path d="M3 15H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
-      <h1 class="title">Virtual Try-On Packaging</h1>
+      <h1 class="title">Bungkus Indonesia</h1>
     </div>
 
     <!-- Toolbar Controls -->
