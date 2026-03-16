@@ -130,12 +130,28 @@ The production build will be available at `http://localhost:8080`
 
 ## Deployment
 
+### Live Demo
+- **GitHub Pages**: https://hhariyanto29.github.io/virtual-tryon-packaging/
+- **Local Preview**: http://207.148.30.206:4173/virtual-tryon-packaging/
+
 ### Build for Production
 ```bash
 npm run build
 ```
 
 The built files will be in the `dist/` directory.
+
+### Deploy to GitHub Pages
+```bash
+npm run deploy
+```
+
+This will deploy the `dist/` folder to the `gh-pages` branch.
+
+### Local Preview Server
+```bash
+npm run preview -- --host 0.0.0.0 --port 4173
+```
 
 ### Docker Production Build
 ```bash
