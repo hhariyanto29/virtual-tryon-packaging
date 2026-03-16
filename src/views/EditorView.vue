@@ -203,6 +203,17 @@
               </div>
             </div>
           </div>
+
+          <!-- Export Panel -->
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <ExportPanel
+              :template-name="currentTemplateName"
+              :scene-manager="sceneManager"
+              @export="handleExport"
+              @batchExport="handleBatchExport"
+              @error="handleExportError"
+            />
+          </div>
         </div>
 
         <!-- Main Canvas Area -->
@@ -241,12 +252,6 @@
             <!-- Quick Actions -->
             <div class="px-6 py-4 border-t border-gray-200">
               <div class="flex flex-wrap gap-3">
-                <button
-                  @click="downloadPNG"
-                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition"
-                >
-                  Download PNG
-                </button>
                 <button
                   @click="downloadGLB"
                   class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition"
@@ -368,6 +373,7 @@ import { ref, computed, onMounted } from 'vue'
 import MockupCanvas from '../components/MockupCanvas.vue'
 import DesignUploader from '../components/DesignUploader.vue'
 import FaceSelector from '../components/FaceSelector.vue'
+import ExportPanel from '../components/ExportPanel.vue'
 import { useMockupStore, type BoxFace } from '../stores/mockupStore'
 import { useTextureManager, type TextureFit } from '../composables/useTextureManager'
 import type { LightingPreset, CameraPreset } from '../engine/SceneManager'
@@ -381,6 +387,10 @@ const canvasRef = ref<InstanceType<typeof MockupCanvas> | null>(null)
 const lightingPresets: LightingPreset[] = ['studio', 'outdoor', 'dramatic']
 const cameraPresets: CameraPreset[] = ['front', 'back', 'top', 'isometric', 'reset']
 const materialTypes: MaterialType[] = ['matte', 'glossy', 'metallic']
+
+// Export controls
+const sceneManager = ref<any>(null)
+const currentTemplateName = ref('box-mockup')
 
 const currentLightingPreset = ref<LightingPreset>('studio')
 const currentCameraPreset = ref<CameraPreset>('isometric')
@@ -607,11 +617,6 @@ const resetCamera = () => {
   setCameraPreset('reset')
 }
 
-const downloadPNG = () => {
-  alert('PNG download feature coming soon!')
-  // Implementation would use renderer.domElement.toDataURL()
-}
-
 const downloadGLB = () => {
   alert('GLB export feature coming soon!')
   // Implementation would use GLTFExporter
@@ -653,9 +658,29 @@ const resetAll = () => {
   console.log('All settings reset')
 }
 
+// Export handlers
+const handleExport = (blob: Blob, filename: string) => {
+  console.log('Export successful:', filename, 'size:', blob.size)
+  // Additional export handling can be added here
+}
+
+const handleBatchExport = (blobs: Blob[], filenames: string[]) => {
+  console.log('Batch export successful:', filenames.length, 'files')
+  // Additional batch export handling can be added here
+}
+
+const handleExportError = (error: Error) => {
+  console.error('Export error:', error)
+  alert(`Export failed: ${error.message}`)
+}
+
 // Canvas events
 const onCanvasLoaded = () => {
   console.log('Canvas loaded successfully')
+  // Get scene manager from canvas component
+  if (canvasRef.value) {
+    sceneManager.value = canvasRef.value.getSceneManager()
+  }
 }
 
 const onCanvasError = (error: Error) => {

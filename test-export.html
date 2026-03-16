@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Service Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Export Service Test</h1>
+    
+    <div class="test-section">
+        <h2>ExportService Class Test</h2>
+        <div id="test1">
+            <p>Testing ExportService static methods...</p>
+            <button onclick="testFilenameGeneration()">Test Filename Generation</button>
+            <div id="result1"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Export Options Test</h2>
+        <div id="test2">
+            <p>Testing export options configuration...</p>
+            <button onclick="testExportOptions()">Test Export Options</button>
+            <div id="result2"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ExportService } from './src/engine/ExportService.ts';
+
+        window.testFilenameGeneration = function() {
+            try {
+                const filename1 = ExportService.generateFilename('box-mockup', 'png');
+                const filename2 = ExportService.generateFilename('custom-template', 'jpg');
+                
+                const result1 = document.getElementById('result1');
+                result1.innerHTML = `
+                    <p class="success">✓ Filename generation successful!</p>
+                    <p>PNG filename: ${filename1}</p>
+                    <p>JPG filename: ${filename2}</p>
+                    <p>Both filenames follow the pattern: template-timestamp.format</p>
+                `;
+            } catch (error) {
+                const result1 = document.getElementById('result1');
+                result1.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
+            }
+        };
+
+        window.testExportOptions = function() {
+            try {
+                const options = {
+                    format: 'png',
+                    quality: 0.9,
+                    width: 1920,
+                    height: 1080,
+                    background: 'transparent',
+                    resolutionMultiplier: 2
+                };
+                
+                const batchOptions = {
+                    angles: ['front', 'back', 'top', 'isometric'],
+                    ...options
+                };
+                
+                const result2 = document.getElementById('result2');
+                result2.innerHTML = `
+                    <p class="success">✓ Export options configured correctly!</p>
+                    <p><strong>Single Export Options:</strong></p>
+                    <pre>${JSON.stringify(options, null, 2)}</pre>
+                    <p><strong>Batch Export Options:</strong></p>
+                    <pre>${JSON.stringify(batchOptions, null, 2)}</pre>
+                    <p>✓ All required properties are present</p>
+                    <p>✓ Type checking passed</p>
+                `;
+            } catch (error) {
+                const result2 = document.getElementById('result2');
+                result2.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

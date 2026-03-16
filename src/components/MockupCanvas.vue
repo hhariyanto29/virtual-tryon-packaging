@@ -285,6 +285,11 @@ defineExpose({
       cancelAnimationFrame(fpsInterval)
       fpsInterval = null
     }
+  },
+  
+  // Export support
+  getSceneManager: () => {
+    return sceneManager
   }
 })
 </script>
