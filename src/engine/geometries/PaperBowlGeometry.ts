@@ -94,9 +94,18 @@ export class PaperBowlGeometry extends BaseGeometry {
       Math.PI * 2
     )
     
-    const wrapMaterial = this.createMaterial(this.currentMaterialType, config.color || '#ffffff')
+    const wrapMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.6,
+      metalness: 0.0,
+      side: THREE.FrontSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1
+    })
     const wrapMesh = new THREE.Mesh(wrapGeometry, wrapMaterial)
     wrapMesh.name = 'wrap'
+    wrapMesh.renderOrder = 1
     
     this.faces.set('wrap', wrapMesh)
     this.group.add(wrapMesh)

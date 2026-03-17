@@ -37,7 +37,12 @@ export abstract class BaseGeometry {
         textureUrl,
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace
-          texture.anisotropy = 4 // Default anisotropy value
+          texture.anisotropy = 16
+          texture.generateMipmaps = true
+          texture.minFilter = THREE.LinearMipmapLinearFilter
+          texture.magFilter = THREE.LinearFilter
+          texture.wrapS = THREE.ClampToEdgeWrapping
+          texture.wrapT = THREE.ClampToEdgeWrapping
           
           const material = mesh.material as THREE.MeshStandardMaterial
           if (material) {
@@ -45,6 +50,9 @@ export abstract class BaseGeometry {
               material.map.dispose()
             }
             material.map = texture
+            material.transparent = false
+            material.opacity = 1.0
+            material.roughness = Math.max(material.roughness, 0.3)
             material.needsUpdate = true
           }
           resolve()

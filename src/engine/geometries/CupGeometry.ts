@@ -70,13 +70,22 @@ export class CupGeometry extends BaseGeometry {
       true // open ended
     )
     
-    // Position label area in the middle of cup
-    const labelMaterial = this.createMaterial(this.currentMaterialType, config.color || '#ffffff')
+    // Position label area on the outside of cup — printed label look
+    const labelMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.5,
+      metalness: 0.0,
+      side: THREE.FrontSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1
+    })
     const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial)
     labelMesh.position.y = 0
     labelMesh.castShadow = true
     labelMesh.receiveShadow = true
     labelMesh.name = 'label'
+    labelMesh.renderOrder = 1
     
     this.faces.set('label', labelMesh)
     this.group.add(labelMesh)

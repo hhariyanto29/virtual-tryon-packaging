@@ -97,15 +97,24 @@ export class PerfumeBottleGeometry extends BaseGeometry {
       1,
       true,
       0,
-      Math.PI * 2 * 0.7 // Only 70% of full circle for label wrap
+      Math.PI * 2 // Full wrap around bottle
     )
     
-    const labelMaterial = this.createMaterial(this.currentMaterialType, '#ffffff')
+    const labelMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.3,
+      metalness: 0.0,
+      side: THREE.FrontSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1
+    })
     const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial)
     labelMesh.position.y = -config.totalHeight / 2 + bodyHeight * 0.5
     labelMesh.castShadow = true
     labelMesh.receiveShadow = true
     labelMesh.name = 'label'
+    labelMesh.renderOrder = 1
     
     this.faces.set('label', labelMesh)
     this.group.add(labelMesh)
