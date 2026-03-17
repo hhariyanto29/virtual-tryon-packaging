@@ -62,8 +62,8 @@ export class CupGeometry extends BaseGeometry {
     // Create label wrap area (main texture surface)
     const labelHeight = config.height * 0.7
     const labelGeometry = new THREE.CylinderGeometry(
-      config.radiusTop * 0.95,
-      config.radiusBottom * 0.95,
+      config.radiusTop * 1.02,
+      config.radiusBottom * 1.02,
       labelHeight,
       config.radialSegments,
       1,

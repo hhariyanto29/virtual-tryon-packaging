@@ -90,8 +90,8 @@ export class PerfumeBottleGeometry extends BaseGeometry {
     const labelWidth = Math.PI * 2 * config.bodyRadius * 0.7 // 70% of circumference
     
     const labelGeometry = new THREE.CylinderGeometry(
-      config.bodyRadius * 0.95,
-      config.bodyRadius * 0.95,
+      config.bodyRadius * 1.02,
+      config.bodyRadius * 1.02,
       labelHeight,
       segments,
       1,

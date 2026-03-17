@@ -75,11 +75,11 @@ export class PaperBowlGeometry extends BaseGeometry {
     this.faces.set('body', bowlMesh)
     this.group.add(bowlMesh)
 
-    // Create outer wrap area for texturing (slightly smaller than actual bowl)
+    // Create outer wrap area for texturing (slightly outside the bowl surface)
     const wrapPoints: THREE.Vector2[] = []
     const wrapHeight = config.height * 0.8
-    const wrapTopRadius = config.radiusTop * 0.9
-    const wrapBottomRadius = config.radiusBottom * 0.9
+    const wrapTopRadius = config.radiusTop * 1.02
+    const wrapBottomRadius = config.radiusBottom * 1.02
     
     wrapPoints.push(new THREE.Vector2(wrapBottomRadius, -wrapHeight / 2))
     wrapPoints.push(new THREE.Vector2(wrapBottomRadius * 1.1, -wrapHeight / 2 + wrapHeight * 0.1))
