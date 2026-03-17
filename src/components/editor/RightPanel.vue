@@ -294,16 +294,48 @@ const uploadMode = computed(() => {
   return 'multiface'
 })
 
-// Wrap upload handlers
-const handleWrapApply = async (file: File) => {
+// Dynamic faces from current geometry
+const availableFaces = computed(() => {
+  if (!props.sceneManager) return []
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) return []
+  return geo.getTextureableFaces().map((f: any) => ({
+    ...f,
+    canReceiveTexture: true
+  }))
+})
+
+const faceTextures = ref<Record<string, string | null>>({})
+
+const handleMultiFaceUpload = () => {}
+const handleMultiFaceApply = async (data: { faceId: string; file: File; fit: string }) => {
+  await applyTextureToFace(data.faceId, data.file)
+  faceTextures.value[data.faceId] = URL.createObjectURL(data.file)
+}
+const handleMultiFaceClear = (faceId: string) => {
+  const geo = props.sceneManager?.getCurrentGeometry()
+  if (geo) geo.clearTexture(faceId)
+  faceTextures.value[faceId] = null
+}
+
+// Helper to apply texture to geometry
+const applyTextureToFace = async (faceId: string, file: File) => {
+  if (!props.sceneManager) { console.error('No sceneManager'); return }
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) { console.error('No currentGeometry'); return }
+  const url = URL.createObjectURL(file)
+  console.log(`Applying texture to face: ${faceId}`, url)
+  await geo.applyTexture(faceId, url)
+}
+
+// Wrap upload handlers — emits { file, fit }
+const handleWrapApply = async (data: { file: File; fit: string }) => {
   if (!props.sceneManager) return
   const geo = props.sceneManager.getCurrentGeometry()
   if (!geo) return
-  const url = URL.createObjectURL(file)
-  // Try 'label' first, fallback to 'body'
   const faces = geo.getTextureableFaces()
   const labelFace = faces.find((f: any) => f.id === 'label') || faces.find((f: any) => f.id === 'body') || faces[0]
-  if (labelFace) await geo.applyTexture(labelFace.id, url)
+  if (labelFace) await applyTextureToFace(labelFace.id, data.file)
 }
 
 const handleClearUpload = () => {
@@ -314,26 +346,18 @@ const handleClearUpload = () => {
   faces.forEach((f: any) => geo.clearTexture(f.id))
 }
 
-// Dual upload handlers
+// Dual upload handlers — emits { file, fit }
 const handleFrontUpload = () => {}
 const handleBackUpload = () => {}
-const handleFrontApply = async (file: File) => {
-  if (!props.sceneManager) return
-  const geo = props.sceneManager.getCurrentGeometry()
-  if (!geo) return
-  const url = URL.createObjectURL(file)
-  await geo.applyTexture('front', url)
+const handleFrontApply = async (data: { file: File; fit: string }) => {
+  await applyTextureToFace('front', data.file)
 }
-const handleBackApply = async (file: File) => {
-  if (!props.sceneManager) return
-  const geo = props.sceneManager.getCurrentGeometry()
-  if (!geo) return
-  const url = URL.createObjectURL(file)
-  await geo.applyTexture('back', url)
+const handleBackApply = async (data: { file: File; fit: string }) => {
+  await applyTextureToFace('back', data.file)
 }
-const handleBothApply = async (data: { front: File, back: File }) => {
-  await handleFrontApply(data.front)
-  await handleBackApply(data.back)
+const handleBothApply = async (data: { frontFile: File; backFile: File; fit: string }) => {
+  await applyTextureToFace('front', data.frontFile)
+  await applyTextureToFace('back', data.backFile)
 }
 const handleClearFront = () => {
   const geo = props.sceneManager?.getCurrentGeometry()
@@ -344,13 +368,9 @@ const handleClearBack = () => {
   if (geo) geo.clearTexture('back')
 }
 
-// MultiFace handlers
-const handleFaceApply = async (data: { faceId: string, file: File }) => {
-  if (!props.sceneManager) return
-  const geo = props.sceneManager.getCurrentGeometry()
-  if (!geo) return
-  const url = URL.createObjectURL(data.file)
-  await geo.applyTexture(data.faceId, url)
+// MultiFace handlers — emits { faceId, file, fit }
+const handleFaceApply = async (data: { faceId: string; file: File; fit: string }) => {
+  await applyTextureToFace(data.faceId, data.file)
 }
 const handleFaceClear = (faceId: string) => {
   const geo = props.sceneManager?.getCurrentGeometry()
