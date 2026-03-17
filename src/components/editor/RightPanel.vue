@@ -21,7 +21,38 @@
           :is-expanded="expandedSections.upload"
           @toggle="toggleSection('upload')"
         >
+          <!-- Dynamic Uploader based on template category -->
+          <WrapUploader
+            v-if="uploadMode === 'wrap'"
+            :template-name="currentTemplateName"
+            @upload="handleDesignUpload"
+            @apply="handleWrapApply"
+            @clear="handleClearUpload"
+          />
+          
+          <DualUploader
+            v-else-if="uploadMode === 'dual'"
+            @upload-front="handleFrontUpload"
+            @upload-back="handleBackUpload"
+            @apply-front="handleFrontApply"
+            @apply-back="handleBackApply"
+            @apply-both="handleBothApply"
+            @clear-front="handleClearFront"
+            @clear-back="handleClearBack"
+          />
+          
+          <MultiFaceUploader
+            v-else-if="uploadMode === 'multiface'"
+            :faces="availableFaces"
+            :face-textures="faceTextures"
+            @upload="handleMultiFaceUpload"
+            @apply="handleMultiFaceApply"
+            @clear="handleMultiFaceClear"
+          />
+          
+          <!-- Fallback to original DesignUploader for unknown modes -->
           <DesignUploader
+            v-else
             :selected-face="selectedFace"
             @upload="handleDesignUpload"
             @apply-to-face="handleApplyToFace"
@@ -230,14 +261,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import DesignUploader from '../DesignUploader.vue'
 import FaceSelector from '../FaceSelector.vue'
 import ExportPanel from '../ExportPanel.vue'
 import AccordionSection from './AccordionSection.vue'
+import WrapUploader from './WrapUploader.vue'
+import DualUploader from './DualUploader.vue'
+import MultiFaceUploader from './MultiFaceUploader.vue'
 import type { BoxFace } from '../../stores/mockupStore'
-import type { MaterialType } from '../engine/BoxMockup'
-import type { LightingPreset, CameraPreset } from '../engine/SceneManager'
+import type { MaterialType } from '../../engine/BoxMockup'
+import type { LightingPreset, CameraPreset } from '../../engine/SceneManager'
 import type { TextureFit } from './types'
 
 // Props
@@ -249,7 +283,79 @@ const props = defineProps<{
   dimensions: { width: number; height: number; depth: number }
   sceneManager: any
   currentTemplateName: string
+  currentTemplateCategory?: string
 }>()
+
+// Upload mode based on template category
+const uploadMode = computed(() => {
+  const cat = props.currentTemplateCategory
+  if (['cup', 'perfume', 'bowl', 'bottle'].includes(cat || '')) return 'wrap'
+  if (['pouch', 'bag'].includes(cat || '')) return 'dual'
+  return 'multiface'
+})
+
+// Wrap upload handlers
+const handleWrapApply = async (file: File) => {
+  if (!props.sceneManager) return
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) return
+  const url = URL.createObjectURL(file)
+  // Try 'label' first, fallback to 'body'
+  const faces = geo.getTextureableFaces()
+  const labelFace = faces.find((f: any) => f.id === 'label') || faces.find((f: any) => f.id === 'body') || faces[0]
+  if (labelFace) await geo.applyTexture(labelFace.id, url)
+}
+
+const handleClearUpload = () => {
+  if (!props.sceneManager) return
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) return
+  const faces = geo.getTextureableFaces()
+  faces.forEach((f: any) => geo.clearTexture(f.id))
+}
+
+// Dual upload handlers
+const handleFrontUpload = () => {}
+const handleBackUpload = () => {}
+const handleFrontApply = async (file: File) => {
+  if (!props.sceneManager) return
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) return
+  const url = URL.createObjectURL(file)
+  await geo.applyTexture('front', url)
+}
+const handleBackApply = async (file: File) => {
+  if (!props.sceneManager) return
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) return
+  const url = URL.createObjectURL(file)
+  await geo.applyTexture('back', url)
+}
+const handleBothApply = async (data: { front: File, back: File }) => {
+  await handleFrontApply(data.front)
+  await handleBackApply(data.back)
+}
+const handleClearFront = () => {
+  const geo = props.sceneManager?.getCurrentGeometry()
+  if (geo) geo.clearTexture('front')
+}
+const handleClearBack = () => {
+  const geo = props.sceneManager?.getCurrentGeometry()
+  if (geo) geo.clearTexture('back')
+}
+
+// MultiFace handlers
+const handleFaceApply = async (data: { faceId: string, file: File }) => {
+  if (!props.sceneManager) return
+  const geo = props.sceneManager.getCurrentGeometry()
+  if (!geo) return
+  const url = URL.createObjectURL(data.file)
+  await geo.applyTexture(data.faceId, url)
+}
+const handleFaceClear = (faceId: string) => {
+  const geo = props.sceneManager?.getCurrentGeometry()
+  if (geo) geo.clearTexture(faceId)
+}
 
 // Emits
 const emit = defineEmits<{
@@ -319,36 +425,8 @@ const handleDesignUpload = (file: File) => {
   emit('design-upload', file)
 }
 
-const handleApplyToFace = (data: { face: BoxFace; file: File; fit: TextureFit }) => {
-  emit('apply-to-face', data)
-}
-
-const handleApplyToAll = (data: { file: File; fit: TextureFit }) => {
-  emit('apply-to-all', data)
-}
-
-const handleClearUpload = () => {
-  emit('clear-upload')
-}
-
-const handleRemoveTexture = (face: BoxFace) => {
-  emit('remove-texture', face)
-}
-
-const handleCopyToOthers = (sourceFace: BoxFace) => {
-  emit('copy-to-others', sourceFace)
-}
-
-const handleResetAllTextures = () => {
-  emit('reset-all-textures')
-}
-
 const handleExport = (blob: Blob, filename: string) => {
   emit('export', blob, filename)
-}
-
-const handleBatchExport = (blobs: Blob[], filenames: string[]) => {
-  emit('batch-export', blobs, filenames)
 }
 
 const handleExportError = (error: Error) => {

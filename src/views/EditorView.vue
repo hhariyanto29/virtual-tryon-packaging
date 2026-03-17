@@ -65,6 +65,7 @@
         :dimensions="dimensions"
         :scene-manager="sceneManager"
         :current-template-name="currentTemplateName"
+        :current-template-category="currentTemplateCategory"
         @select-face="selectFace"
         @set-material-type="setMaterialType"
         @set-lighting-preset="setLightingPreset"
@@ -154,6 +155,7 @@ const selectedTemplate = ref<any>(null)
 // Export controls
 const sceneManager = ref<any>(null)
 const currentTemplateName = ref('box-mockup')
+const currentTemplateCategory = ref('cup')
 
 // Computed
 const texturedFacesCount = computed(() => {
@@ -268,6 +270,7 @@ const handleTemplateSelect = async (template: any) => {
     try {
       await sceneManager.value.loadTemplate(template)
       currentTemplateName.value = template.name
+      currentTemplateCategory.value = template.category || 'box'
       console.log('Template loaded:', template.name)
     } catch (error) {
       console.error('Failed to load template:', error)
