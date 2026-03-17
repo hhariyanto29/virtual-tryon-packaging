@@ -209,6 +209,11 @@ const handleFile = (file: File) => {
   
   // Emit upload event
   emit('upload', file)
+  
+  // Auto-apply to label immediately after upload
+  setTimeout(() => {
+    applyToLabel()
+  }, 100)
 }
 
 const handleDragOver = (event: DragEvent) => {

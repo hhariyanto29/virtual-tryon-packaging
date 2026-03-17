@@ -275,6 +275,7 @@ const handleFrontFile = (file: File) => {
   frontPreviewUrl.value = URL.createObjectURL(file)
   
   emit('upload-front', file)
+  setTimeout(() => { applyToFront() }, 100)
 }
 
 const handleBackFile = (file: File) => {
@@ -292,6 +293,7 @@ const handleBackFile = (file: File) => {
   backPreviewUrl.value = URL.createObjectURL(file)
   
   emit('upload-back', file)
+  setTimeout(() => { applyToBack() }, 100)
 }
 
 // Front handlers
