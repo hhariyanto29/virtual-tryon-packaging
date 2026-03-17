@@ -298,7 +298,7 @@ export const defaultTemplates: PackagingTemplate[] = [
   {
     id: 'takeaway-box',
     name: 'Takeaway Box / Kotak Bawa Pulang',
-    category: 'box',
+    category: 'takeaway',
     thumbnail: '/templates/box-takeaway.jpg',
     description: 'Kotak makanan dengan tutup flip-top untuk takeaway.',
     geometry: {
@@ -376,7 +376,7 @@ export const defaultTemplates: PackagingTemplate[] = [
   {
     id: 'perfume-bottle',
     name: 'Perfume Bottle / Botol Parfum',
-    category: 'bottle',
+    category: 'perfume',
     thumbnail: '/templates/bottle-perfume.jpg',
     description: 'Botol parfum elegan dengan tampilan kristal/glass.',
     geometry: {
