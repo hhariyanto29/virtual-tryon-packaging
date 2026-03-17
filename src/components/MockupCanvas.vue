@@ -28,21 +28,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { SceneManager, type LightingPreset, type CameraPreset } from '../engine/SceneManager'
-import { BoxMockup, type BoxFace, type MaterialType } from '../engine/BoxMockup'
+import { defaultTemplates } from '../templates/defaults'
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const loading = ref(true)
 const textureLoading = ref(false)
-const showFPS = ref((import.meta as any).env.MODE === 'development') // Show FPS in dev mode
-const fps = ref(0)
 
 let sceneManager: SceneManager | null = null
-let boxMockup: BoxMockup | null = null
-let frameCount = 0
-let lastTime = 0
-let fpsInterval: number | null = null
 
-// Props
 const props = defineProps<{
   lightingPreset?: LightingPreset
   cameraPreset?: CameraPreset
@@ -50,46 +43,28 @@ const props = defineProps<{
   autoRotate?: boolean
 }>()
 
-// Emits
 const emit = defineEmits<{
   loaded: []
   error: [error: Error]
 }>()
 
-onMounted(() => {
+onMounted(async () => {
   if (!canvasRef.value) return
   
   try {
-    // Initialize scene
     sceneManager = new SceneManager(canvasRef.value)
     
-    // Create box mockup
-    boxMockup = new BoxMockup()
-    sceneManager.getScene().add(boxMockup.getMesh())
-    
-    // Apply initial props
-    if (props.lightingPreset) {
-      sceneManager.setLightingPreset(props.lightingPreset)
+    // Load first template by default
+    if (defaultTemplates.length > 0) {
+      await sceneManager.loadTemplate(defaultTemplates[0])
     }
     
-    if (props.cameraPreset) {
-      sceneManager.setCameraPreset(props.cameraPreset)
-    }
+    if (props.lightingPreset) sceneManager.setLightingPreset(props.lightingPreset)
+    if (props.cameraPreset) sceneManager.setCameraPreset(props.cameraPreset)
+    if (props.showGrid !== undefined) sceneManager.toggleGridHelper(props.showGrid)
+    if (props.autoRotate !== undefined) sceneManager.setAutoRotate(props.autoRotate)
     
-    if (props.showGrid !== undefined) {
-      sceneManager.toggleGridHelper(props.showGrid)
-    }
-    
-    if (props.autoRotate !== undefined) {
-      sceneManager.setAutoRotate(props.autoRotate)
-    }
-    
-    // Start animation
     sceneManager.startAnimation()
-    
-    // Start FPS counter
-    startFPSCounter()
-    
     loading.value = false
     emit('loaded')
   } catch (error) {
@@ -99,198 +74,77 @@ onMounted(() => {
   }
 })
 
-// Watch props changes
-watch(() => props.lightingPreset, (newPreset) => {
-  if (sceneManager && newPreset) {
-    sceneManager.setLightingPreset(newPreset)
-  }
-})
-
-watch(() => props.cameraPreset, (newPreset) => {
-  if (sceneManager && newPreset) {
-    sceneManager.setCameraPreset(newPreset)
-  }
-})
-
-watch(() => props.showGrid, (show) => {
-  if (sceneManager && show !== undefined) {
-    sceneManager.toggleGridHelper(show)
-  }
-})
-
-watch(() => props.autoRotate, (enabled) => {
-  if (sceneManager && enabled !== undefined) {
-    sceneManager.setAutoRotate(enabled)
-  }
-})
-
-// FPS counter
-const startFPSCounter = () => {
-  lastTime = performance.now()
-  
-  const updateFPS = () => {
-    frameCount++
-    const currentTime = performance.now()
-    const delta = currentTime - lastTime
-    
-    if (delta >= 1000) { // Update every second
-      fps.value = (frameCount * 1000) / delta
-      frameCount = 0
-      lastTime = currentTime
-    }
-    
-    if (showFPS.value) {
-      fpsInterval = requestAnimationFrame(updateFPS)
-    }
-  }
-  
-  if (showFPS.value) {
-    fpsInterval = requestAnimationFrame(updateFPS)
-  }
-}
+watch(() => props.lightingPreset, (v) => { if (sceneManager && v) sceneManager.setLightingPreset(v) })
+watch(() => props.cameraPreset, (v) => { if (sceneManager && v) sceneManager.setCameraPreset(v) })
+watch(() => props.showGrid, (v) => { if (sceneManager && v !== undefined) sceneManager.toggleGridHelper(v) })
+watch(() => props.autoRotate, (v) => { if (sceneManager && v !== undefined) sceneManager.setAutoRotate(v) })
 
 onUnmounted(() => {
-  // Stop FPS counter
-  if (fpsInterval) {
-    cancelAnimationFrame(fpsInterval)
-  }
-  
-  // Dispose 3D resources
-  if (boxMockup) {
-    boxMockup.dispose()
-  }
-  
-  if (sceneManager) {
-    sceneManager.dispose()
-  }
+  if (sceneManager) sceneManager.dispose()
 })
 
-// Expose methods for parent component
 defineExpose({
-  // Texture methods
-  applyTexture: async (face: BoxFace, imageUrl: string) => {
-    if (boxMockup) {
-      textureLoading.value = true
-      try {
-        await boxMockup.applyTexture(face, imageUrl)
-      } finally {
-        textureLoading.value = false
-      }
-    } else {
-      return Promise.reject('Box mockup not initialized')
+  // Texture methods — now through SceneManager's currentGeometry
+  applyTexture: async (face: string, imageUrl: string) => {
+    if (!sceneManager) return Promise.reject('Scene not initialized')
+    textureLoading.value = true
+    try {
+      await sceneManager.applyTextureToFace(face, imageUrl)
+    } finally {
+      textureLoading.value = false
     }
   },
   
   applyTextureToAll: async (imageUrl: string) => {
-    if (boxMockup) {
-      textureLoading.value = true
-      try {
-        await boxMockup.applyTextureToAll(imageUrl)
-      } finally {
-        textureLoading.value = false
+    if (!sceneManager) return Promise.reject('Scene not initialized')
+    const geo = sceneManager.getCurrentGeometry()
+    if (!geo) return
+    textureLoading.value = true
+    try {
+      const faces = geo.getTextureableFaces()
+      for (const f of faces) {
+        await geo.applyTexture(f.id, imageUrl)
       }
-    } else {
-      return Promise.reject('Box mockup not initialized')
+    } finally {
+      textureLoading.value = false
     }
   },
   
-  clearTexture: (face: BoxFace) => {
-    if (boxMockup) {
-      boxMockup.clearTexture(face)
-    }
+  clearTexture: (face: string) => {
+    if (sceneManager) sceneManager.clearTextureFromFace(face)
   },
   
   resetTextures: () => {
-    if (boxMockup) {
-      boxMockup.resetTextures()
+    const geo = sceneManager?.getCurrentGeometry()
+    if (geo) {
+      const faces = geo.getTextureableFaces()
+      faces.forEach(f => geo.clearTexture(f.id))
     }
   },
   
-  // Material methods
-  setColor: (face: BoxFace, color: number | string) => {
-    if (boxMockup) {
-      boxMockup.setColor(face, color)
-    }
+  setMaterialType: (type: string) => {
+    if (sceneManager) sceneManager.setMaterialType(type as any)
   },
   
-  setMaterialType: (type: MaterialType) => {
-    if (boxMockup) {
-      boxMockup.setMaterialType(type)
-    }
-  },
-  
-  setOpacity: (face: BoxFace, opacity: number) => {
-    if (boxMockup) {
-      boxMockup.setOpacity(face, opacity)
-    }
-  },
-  
-  toggleEdgesOverlay: (visible: boolean) => {
-    if (boxMockup) {
-      boxMockup.toggleEdgesOverlay(visible)
-    }
-  },
-  
-  resize: (width: number, height: number, depth: number) => {
-    if (boxMockup) {
-      boxMockup.resize(width, height, depth)
-    }
-  },
-  
-  // Scene methods
   setLightingPreset: (preset: LightingPreset) => {
-    if (sceneManager) {
-      sceneManager.setLightingPreset(preset)
-    }
+    if (sceneManager) sceneManager.setLightingPreset(preset)
   },
   
   setCameraPreset: (preset: CameraPreset, duration?: number) => {
-    if (sceneManager) {
-      sceneManager.setCameraPreset(preset, duration)
-    }
+    if (sceneManager) sceneManager.setCameraPreset(preset, duration)
   },
   
   toggleGridHelper: (visible: boolean) => {
-    if (sceneManager) {
-      sceneManager.toggleGridHelper(visible)
-    }
+    if (sceneManager) sceneManager.toggleGridHelper(visible)
   },
   
   setAutoRotate: (enabled: boolean, speed?: number) => {
-    if (sceneManager) {
-      sceneManager.setAutoRotate(enabled, speed)
-    }
+    if (sceneManager) sceneManager.setAutoRotate(enabled, speed)
   },
   
-  loadHDRIEnvironment: async (url: string) => {
-    if (sceneManager) {
-      return sceneManager.loadHDRIEnvironment(url)
-    }
-    return Promise.reject('Scene manager not initialized')
-  },
+  getSceneManager: () => sceneManager,
   
-  // Utility methods
-  getFPS: () => {
-    if (sceneManager) {
-      return sceneManager.getFPS()
-    }
-    return 0
-  },
-  
-  toggleFPS: (show: boolean) => {
-    showFPS.value = show
-    if (show && !fpsInterval) {
-      startFPSCounter()
-    } else if (!show && fpsInterval) {
-      cancelAnimationFrame(fpsInterval)
-      fpsInterval = null
-    }
-  },
-  
-  // Export support
-  getSceneManager: () => {
-    return sceneManager
-  }
+  getFPS: () => sceneManager?.getFPS() || 0
 })
 </script>
 
