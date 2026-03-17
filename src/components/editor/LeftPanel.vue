@@ -109,7 +109,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Template, Category } from './types'
+import type { Category } from './types'
+import { defaultTemplates } from '../../templates/defaults'
 
 // Props
 const props = defineProps<{
@@ -136,17 +137,15 @@ const categories: Category[] = [
   { id: 'custom', name: 'Custom' }
 ]
 
-// Mock templates data
-const templates: Template[] = [
-  { id: '1', name: 'Standard Box', dimensions: '10×8×6 cm', category: 'boxes', tags: ['basic', 'standard'], isPremium: false },
-  { id: '2', name: 'Premium Gift Box', dimensions: '15×12×8 cm', category: 'boxes', tags: ['gift', 'luxury'], isPremium: true },
-  { id: '3', name: 'Wine Bottle', dimensions: '30×9×9 cm', category: 'bottles', tags: ['beverage', 'glass'], isPremium: false },
-  { id: '4', name: 'Perfume Bottle', dimensions: '12×4×4 cm', category: 'bottles', tags: ['cosmetic', 'luxury'], isPremium: true },
-  { id: '5', name: 'Paper Bag', dimensions: '25×15×8 cm', category: 'bags', tags: ['eco', 'retail'], isPremium: false },
-  { id: '6', name: 'Cosmetic Tube', dimensions: '15×5×5 cm', category: 'tubes', tags: ['cosmetic', 'plastic'], isPremium: false },
-  { id: '7', name: 'Custom Box A', dimensions: '20×15×10 cm', category: 'custom', tags: ['custom', 'large'], isPremium: true },
-  { id: '8', name: 'Custom Box B', dimensions: '8×8×8 cm', category: 'custom', tags: ['custom', 'cube'], isPremium: false }
-]
+// Real templates from defaults
+const templates = defaultTemplates.map(t => ({
+  ...t,
+  dimensions: t.geometry?.dimensions 
+    ? `${t.geometry.dimensions.width || t.geometry.dimensions.radiusTop || '?'}×${t.geometry.dimensions.height}×${t.geometry.dimensions.depth || t.geometry.dimensions.radiusBottom || '?'} cm`
+    : '',
+  tags: t.tags || [],
+  isPremium: false
+}))
 
 // Computed
 const filteredTemplates = computed(() => {

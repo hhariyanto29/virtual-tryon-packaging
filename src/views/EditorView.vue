@@ -259,10 +259,20 @@ const selectFace = (face: BoxFace) => {
   store.setSelectedFace(face)
 }
 
-const handleTemplateSelect = (template: any) => {
+const handleTemplateSelect = async (template: any) => {
   selectedTemplate.value = template
   console.log('Template selected:', template)
-  // Here you would load the template into the canvas
+  
+  // Load template into 3D canvas
+  if (sceneManager.value) {
+    try {
+      await sceneManager.value.loadTemplate(template)
+      currentTemplateName.value = template.name
+      console.log('Template loaded:', template.name)
+    } catch (error) {
+      console.error('Failed to load template:', error)
+    }
+  }
 }
 
 const handleDesignUpload = (file: File) => {
